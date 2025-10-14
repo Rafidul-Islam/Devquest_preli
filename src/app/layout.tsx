@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
+import { ClientOnly } from '@/components/layout/ClientOnly';
 
 export const metadata: Metadata = {
   title: 'SecureExam Pro',
@@ -17,7 +18,9 @@ export default function RootLayout({
       <head />
       <body className="font-body antialiased h-full" suppressHydrationWarning>
         <div className="flex flex-col min-h-screen">{children}</div>
-        <Toaster />
+        <ClientOnly>
+          <Toaster />
+        </ClientOnly>
       </body>
     </html>
   );
