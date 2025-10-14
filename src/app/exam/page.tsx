@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Video, ArrowLeft, ArrowRight, Camera } from 'lucide-react';
 import { useMediaRecorder } from '@/hooks/use-media-recorder';
 import { cn } from '@/lib/utils';
+import Draggable from 'react-draggable';
 
 type ExamState = 'idle' | 'permission' | 'active' | 'submitting' | 'error';
 
@@ -62,7 +63,6 @@ export default function ExamPage() {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play().catch(console.error);
       }
       
       startRecording(stream);
@@ -94,7 +94,7 @@ export default function ExamPage() {
 
   const handlePrev = () => {
     if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
   };
 
@@ -152,29 +152,32 @@ export default function ExamPage() {
     <>
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
-         <div className="fixed top-20 right-4 z-10">
-          <Card className="w-64 shadow-lg">
-            <CardHeader className="p-2 flex-row items-center gap-2">
-              <Video className={cn("h-4 w-4", status === 'recording' ? 'text-destructive animate-pulse' : 'text-muted-foreground')} />
-              <CardTitle className="text-sm">
-                {status === 'recording' ? 'Recording...' : 'Camera'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0 relative">
-               <video ref={videoRef} className="w-full h-auto rounded-b-lg" autoPlay playsInline muted />
-               {examState === 'permission' && !hasCameraPermission && (
-                <div className="absolute inset-0 flex items-center justify-center bg-background/80">
-                  <Loader2 className="h-6 w-6 animate-spin"/>
-                </div>
-               )}
-               {examState !== 'active' && examState !== 'permission' && (
-                <div className="absolute inset-0 flex items-center justify-center bg-background/80">
-                  <Camera className="h-8 w-8 text-muted-foreground" />
-                </div>
-               )}
-            </CardContent>
-          </Card>
-        </div>
+        <Draggable>
+          <div className="fixed top-20 right-4 z-10 cursor-move">
+            <Card className="w-32 shadow-lg">
+              <CardHeader className="p-2 flex-row items-center gap-2">
+                <Video className={cn("h-4 w-4", status === 'recording' ? 'text-destructive animate-pulse' : 'text-muted-foreground')} />
+                <CardTitle className="text-sm">
+                  {status === 'recording' ? 'Recording...' : 'Camera'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0 relative">
+                 <video ref={videoRef} className="w-full h-auto rounded-b-lg" autoPlay playsInline muted />
+                 {examState === 'permission' && !hasCameraPermission && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+                    <Loader2 className="h-6 w-6 animate-spin"/>
+                  </div>
+                 )}
+                 {examState !== 'active' && examState !== 'permission' && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+                    <Camera className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                 )}
+              </CardContent>
+            </Card>
+          </div>
+        </Draggable>
+
 
         <div className="max-w-4xl mx-auto">
           {examState === 'idle' || examState === 'error' ? (
