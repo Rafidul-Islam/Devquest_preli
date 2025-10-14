@@ -153,7 +153,7 @@ export default function ExamPage() {
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="fixed top-20 right-4 z-10">
-          <Card className="w-64 shadow-lg">
+          <Card className="w-32 shadow-lg">
             <CardHeader className="p-2 flex-row items-center gap-2">
               <Video className={cn("h-4 w-4", status === 'recording' ? 'text-destructive animate-pulse' : 'text-muted-foreground')} />
               <CardTitle className="text-sm">
@@ -167,7 +167,7 @@ export default function ExamPage() {
                   <Loader2 className="h-6 w-6 animate-spin"/>
                 </div>
                )}
-               {!hasCameraPermission && examState !== 'active' && (
+               {!hasCameraPermission && examState !== 'active' && examState !== 'permission' && (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/80">
                   <Camera className="h-8 w-8 text-muted-foreground" />
                 </div>
