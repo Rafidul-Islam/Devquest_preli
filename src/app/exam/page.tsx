@@ -45,7 +45,6 @@ export default function ExamPage() {
   useEffect(() => {
     if (recorderError) {
       setExamState('error');
-      setHasCameraPermission(false);
       toast({
         variant: "destructive",
         title: "Recording Error",
@@ -76,8 +75,8 @@ export default function ExamPage() {
       setHasCameraPermission(false);
       toast({
           variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings to start the exam.',
+          title: 'Camera Access Required',
+          description: 'You must grant camera and microphone access to start the exam.',
       });
     }
   };
@@ -158,14 +157,19 @@ export default function ExamPage() {
             <CardHeader className="p-2 flex-row items-center gap-2">
               <Video className={cn("h-4 w-4", status === 'recording' ? 'text-destructive animate-pulse' : 'text-muted-foreground')} />
               <CardTitle className="text-sm">
-                {status === 'recording' ? 'Recording in Progress' : 'Camera Preview'}
+                {status === 'recording' ? 'Recording...' : 'Camera Preview'}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0 relative">
                <video ref={videoRef} className="w-full h-auto rounded-b-lg" autoPlay playsInline muted />
-               {examState === 'permission' && (
+               {examState === 'permission' && !hasCameraPermission && (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/80">
                   <Loader2 className="h-6 w-6 animate-spin"/>
+                </div>
+               )}
+               {!hasCameraPermission && examState !== 'active' && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+                  <Camera className="h-8 w-8 text-muted-foreground" />
                 </div>
                )}
             </CardContent>
@@ -173,7 +177,7 @@ export default function ExamPage() {
         </div>
 
         <div className="max-w-4xl mx-auto">
-          {examState === 'idle' && (
+          {examState === 'idle' || examState === 'error' ? (
             <Card>
               <CardHeader>
                 <CardTitle className="text-2xl font-headline">Exam Instructions</CardTitle>
@@ -182,44 +186,36 @@ export default function ExamPage() {
               <CardContent className="space-y-4">
                 <p>This is a proctored exam. Your session will be recorded via your webcam and audio.</p>
                 <p>Ensure you are in a quiet, well-lit room with no one else present.</p>
-                <Alert>
+                <Alert variant={examState === 'error' ? 'destructive' : 'default'}>
                   <Camera className="h-4 w-4" />
                   <AlertTitle>Camera & Mic Access Required</AlertTitle>
                   <AlertDescription>
-                    We will need to access your camera and microphone to proctor the exam. Please grant permission when prompted.
+                    We will need to access your camera and microphone to proctor the exam. Please grant permission when prompted to start.
                   </AlertDescription>
                 </Alert>
               </CardContent>
               <CardFooter>
-                <Button size="lg" onClick={handleStartExam}>Start Exam</Button>
+                <Button size="lg" onClick={handleStartExam}>
+                  {examState === 'error' ? 'Retry Camera Access' : 'Start Exam'}
+                </Button>
               </CardFooter>
             </Card>
-          )}
+          ) : null}
 
-          {(examState === 'permission' || examState === 'submitting') && !hasCameraPermission && (
+          {examState === 'permission' && (
             <div className="flex flex-col items-center justify-center h-96">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 <p className="mt-4 text-lg">
-                  {examState === 'permission' ? 'Requesting camera access...' : 'Submitting and analyzing...'}
+                  Requesting camera access... Please allow access in the browser prompt.
                 </p>
             </div>
           )}
           
-          {examState === 'submitting' && hasCameraPermission && (
+          {examState === 'submitting' && (
              <div className="flex flex-col items-center justify-center h-96">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 <p className="mt-4 text-lg">Submitting and analyzing...</p>
             </div>
-          )}
-
-          {examState === 'error' && (
-             <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>
-                  Camera access was denied or another error occurred. Please refresh the page, grant permissions, and try again.
-                </AlertDescription>
-            </Alert>
           )}
 
           {examState === 'active' && (
