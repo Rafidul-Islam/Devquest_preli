@@ -15,6 +15,7 @@ import { getProctoringAnalysis } from '@/lib/actions';
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Video, VideoOff, AlertTriangle, ArrowLeft, ArrowRight, Camera } from 'lucide-react';
 import { useMediaRecorder } from '@/hooks/use-media-recorder';
+import { cn } from '@/lib/utils';
 
 type ExamState = 'idle' | 'permission' | 'active' | 'submitting' | 'error';
 
@@ -32,6 +33,7 @@ export default function ExamPage() {
   useEffect(() => {
     if (recorderError) {
       setExamState('error');
+      setHasCameraPermission(false);
       toast({
         variant: "destructive",
         title: "Camera Error",
@@ -47,7 +49,7 @@ export default function ExamPage() {
     }
      if (status === 'error') {
       setHasCameraPermission(false);
-      setExamState('idle'); // or an error state
+      setExamState('error'); 
       toast({
           variant: 'destructive',
           title: 'Camera Access Denied',
@@ -85,7 +87,7 @@ export default function ExamPage() {
     
     const videoDataUri = await stopRecording();
 
-    if (!videoDataUri) {
+    if (!videoDataUri && hasCameraPermission) {
       toast({
         variant: "destructive",
         title: "Recording Error",
@@ -126,6 +128,19 @@ export default function ExamPage() {
     <>
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
+         {examState === 'active' && (
+             <div className="fixed bottom-4 right-4 z-10">
+                <Card className="w-64 shadow-lg">
+                  <CardHeader className="p-2 flex-row items-center gap-2">
+                    <Video className="h-4 w-4 text-destructive animate-pulse" />
+                    <CardTitle className="text-sm">Recording in Progress</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                     <video ref={videoRef} className="w-full h-auto rounded-b-lg" autoPlay playsInline muted />
+                  </CardContent>
+                </Card>
+              </div>
+          )}
         <div className="max-w-4xl mx-auto">
           {examState === 'idle' && (
             <Card>
@@ -172,18 +187,6 @@ export default function ExamPage() {
 
           {examState === 'active' && (
             <div>
-              <div className="fixed bottom-4 right-4 z-10">
-                <Card className="w-64 shadow-lg">
-                  <CardHeader className="p-2 flex-row items-center gap-2">
-                    <Video className="h-4 w-4 text-destructive animate-pulse" />
-                    <CardTitle className="text-sm">Recording in Progress</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                     <video ref={videoRef} className="w-full h-auto rounded-b-lg" autoPlay playsInline muted />
-                  </CardContent>
-                </Card>
-              </div>
-
               <Progress value={progress} className="mb-4" />
               <Card className="transition-all duration-300">
                 <CardHeader>
