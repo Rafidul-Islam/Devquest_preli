@@ -13,18 +13,11 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getProctoringAnalysis } from '@/lib/actions';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Video, AlertTriangle, ArrowLeft, ArrowRight, Camera } from 'lucide-react';
+import { Loader2, Video, ArrowLeft, ArrowRight, Camera } from 'lucide-react';
 import { useMediaRecorder } from '@/hooks/use-media-recorder';
 import { cn } from '@/lib/utils';
 
 type ExamState = 'idle' | 'permission' | 'active' | 'submitting' | 'error';
-
-// Type guard for FaceDetector
-declare global {
-  interface Window {
-    FaceDetector: any;
-  }
-}
 
 export default function ExamPage() {
   const router = useRouter();
@@ -34,23 +27,17 @@ export default function ExamPage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>(() => Array(examQuestions.length).fill(null));
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
-  const [faceDetectorSupported, setFaceDetectorSupported] = useState(true);
   
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const animationFrameId = useRef<number>();
 
   const { status, startRecording, stopRecording, error: recorderError } = useMediaRecorder();
   
   useEffect(() => {
-    // Cleanup function to stop camera and animation frame on component unmount
+    // Cleanup function to stop camera on component unmount
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
-      }
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
       }
     };
   }, []);
@@ -66,35 +53,6 @@ export default function ExamPage() {
     }
   }, [recorderError, toast]);
 
-  const detectFaces = async (faceDetector: any) => {
-    if (!videoRef.current || !canvasRef.current || videoRef.current.readyState < 2) {
-      animationFrameId.current = requestAnimationFrame(() => detectFaces(faceDetector));
-      return;
-    }
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    
-    if (ctx) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-
-      const faces = await faceDetector.detect(video);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      faces.forEach((face: { boundingBox: { x: number; y: number; width: number; height: number; }; }) => {
-        ctx.strokeStyle = '#34D399'; // Green color for the box
-        ctx.lineWidth = 2;
-        const { x, y, width, height } = face.boundingBox;
-        ctx.strokeRect(x, y, width, height);
-      });
-    }
-
-    animationFrameId.current = requestAnimationFrame(() => detectFaces(faceDetector));
-  };
-
-
   const handleStartExam = async () => {
     setExamState('permission');
     try {
@@ -105,16 +63,6 @@ export default function ExamPage() {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.play().catch(console.error);
-      }
-
-      if ('FaceDetector' in window) {
-        const faceDetector = new (window as any).FaceDetector({ fastMode: true });
-        videoRef.current?.addEventListener('loadeddata', () => {
-           detectFaces(faceDetector);
-        });
-      } else {
-         console.warn("Face Detection API not supported in this browser.");
-         setFaceDetectorSupported(false);
       }
       
       startRecording(stream);
@@ -152,11 +100,7 @@ export default function ExamPage() {
 
   const handleSubmit = async () => {
     setExamState('submitting');
-    
-    if (animationFrameId.current) {
-      cancelAnimationFrame(animationFrameId.current);
-    }
-    
+        
     const videoDataUri = await stopRecording();
     
     if (streamRef.current) {
@@ -218,7 +162,6 @@ export default function ExamPage() {
             </CardHeader>
             <CardContent className="p-0 relative">
                <video ref={videoRef} className="w-full h-auto rounded-b-lg" autoPlay playsInline muted />
-               <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
                {examState === 'permission' && !hasCameraPermission && (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/80">
                   <Loader2 className="h-6 w-6 animate-spin"/>
@@ -231,15 +174,6 @@ export default function ExamPage() {
                )}
             </CardContent>
           </Card>
-          {!faceDetectorSupported && examState === 'active' && (
-              <Alert variant="destructive" className="mt-2 w-64 fixed top-48 right-4 z-10">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Face Detection Not Supported</AlertTitle>
-                  <AlertDescription>
-                    Your browser does not support the face detection API. The bounding box will not be shown.
-                  </AlertDescription>
-              </Alert>
-          )}
         </div>
 
         <div className="max-w-4xl mx-auto">
