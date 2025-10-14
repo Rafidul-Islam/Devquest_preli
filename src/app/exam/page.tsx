@@ -35,7 +35,6 @@ export default function ExamPage() {
   
   useEffect(() => {
     return () => {
-      // Cleanup stream on component unmount
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
@@ -52,7 +51,6 @@ export default function ExamPage() {
       });
     }
   }, [recorderError, toast]);
-  
 
   const handleStartExam = async () => {
     setExamState('permission');
@@ -75,8 +73,8 @@ export default function ExamPage() {
       setHasCameraPermission(false);
       toast({
           variant: 'destructive',
-          title: 'Camera Access Required',
-          description: 'You must grant camera and microphone access to start the exam.',
+          title: 'Camera Access Denied',
+          description: 'You must grant camera and microphone access to start the exam. Please enable permissions and try again.',
       });
     }
   };
@@ -121,7 +119,9 @@ export default function ExamPage() {
       return;
     }
 
-    const proctoringResult = await getProctoringAnalysis(videoDataUri || '');
+    // Fallback for when permissions are denied and there's no recording
+    const finalVideoDataUri = hasCameraPermission ? videoDataUri || '' : '';
+    const proctoringResult = await getProctoringAnalysis(finalVideoDataUri);
     
     let score = 0;
     const answeredQuestions = examQuestions.map((q, index) => {
@@ -152,7 +152,7 @@ export default function ExamPage() {
     <>
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="fixed bottom-4 right-4 z-10">
+        <div className="fixed top-20 right-4 z-10">
           <Card className="w-64 shadow-lg">
             <CardHeader className="p-2 flex-row items-center gap-2">
               <Video className={cn("h-4 w-4", status === 'recording' ? 'text-destructive animate-pulse' : 'text-muted-foreground')} />
@@ -190,7 +190,7 @@ export default function ExamPage() {
                   <Camera className="h-4 w-4" />
                   <AlertTitle>Camera & Mic Access Required</AlertTitle>
                   <AlertDescription>
-                    We will need to access your camera and microphone to proctor the exam. Please grant permission when prompted to start.
+                    We will need to access your camera and microphone to proctor the exam. Please grant permission when prompted to start. If you deny permission, the exam cannot proceed.
                   </AlertDescription>
                 </Alert>
               </CardContent>
