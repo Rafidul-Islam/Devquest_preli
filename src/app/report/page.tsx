@@ -47,8 +47,10 @@ function ReportSkeleton() {
 export default function ReportPage() {
   const router = useRouter();
   const [report, setReport] = useState<ExamReport | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     const reportData = localStorage.getItem('examReport');
     if (reportData) {
       setReport(JSON.parse(reportData));
@@ -58,7 +60,7 @@ export default function ReportPage() {
     }
   }, [router]);
 
-  if (!report) {
+  if (!isClient || !report) {
     return (
       <>
         <Header />
