@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 type Status = 'idle' | 'permission-requested' | 'recording' | 'stopped' | 'error';
 
@@ -11,8 +11,29 @@ export function useMediaRecorder(videoRef: React.RefObject<HTMLVideoElement>) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
 
+  useEffect(() => {
+    // Attach stream to video element when it becomes available
+    if (streamRef.current && videoRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+
+    // Cleanup function to stop tracks and remove srcObject
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+    };
+  }, [videoRef]);
+
   const requestPermissionAndStart = useCallback(async () => {
     setStatus('permission-requested');
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       streamRef.current = stream;
@@ -20,6 +41,7 @@ export function useMediaRecorder(videoRef: React.RefObject<HTMLVideoElement>) {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.muted = true; // Mute self-view to prevent feedback
+        videoRef.current.play().catch(console.error); // Start playing the video
       }
 
       mediaRecorderRef.current = new MediaRecorder(stream);
@@ -35,7 +57,7 @@ export function useMediaRecorder(videoRef: React.RefObject<HTMLVideoElement>) {
       setStatus('recording');
       return stream;
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error'));
+      setError(err instanceof Error ? err : new Error('Unknown error accessing media devices.'));
       setStatus('error');
       console.error('Error accessing media devices.', err);
       return null;
@@ -53,7 +75,11 @@ export function useMediaRecorder(videoRef: React.RefObject<HTMLVideoElement>) {
           };
           reader.readAsDataURL(blob);
 
-          streamRef.current?.getTracks().forEach((track) => track.stop());
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach((track) => track.stop());
+            streamRef.current = null;
+          }
+          
           if (videoRef.current) {
             videoRef.current.srcObject = null;
           }
@@ -62,6 +88,10 @@ export function useMediaRecorder(videoRef: React.RefObject<HTMLVideoElement>) {
         };
         mediaRecorderRef.current.stop();
       } else {
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach((track) => track.stop());
+            streamRef.current = null;
+        }
         resolve('');
       }
     });
