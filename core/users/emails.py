@@ -18,7 +18,7 @@ def build_otp_email(otp, purpose):
         <!-- Header -->
         <div style="background-color: #245F73; color: white; padding: 22px 30px;">
           <h2 style="margin: 0; font-weight: 600;">Self Made Dev</h2>
-          <p style="margin: 0; font-size: 14px;">Preliminary Exam Portal</p>
+          <p style="margin: 0; font-size: 14px;">Preliminary Exam Portal by Byteblooper</p>
         </div>
         
         <!-- Body -->
